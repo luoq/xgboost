@@ -320,7 +320,22 @@ void CLIPredict(const CLIParam& param) {
       dmlc::Stream::Create(param.model_in.c_str(), "r"));
   learner->Load(fi.get());
   learner->Configure(param.cfg);
-
+  
+  std::vector<DMatrix*> eval_datasets;
+  std::vector<std::string> eval_data_names;
+  eval_datasets.push_back(dtest.get());
+  eval_data_names.push_back("train");
+  std::string res = learner->EvalOneIter(0, eval_datasets, eval_data_names);
+  if (rabit::IsDistributed()) {
+      if (rabit::GetRank() == 0) {
+      LOG(TRACKER) << res;
+      }
+  } else {
+      if (param.silent < 2) {
+      LOG(CONSOLE) << res;
+      }
+  }
+    
   if (param.silent == 0) {
     LOG(CONSOLE) << "start prediction...";
   }
@@ -376,3 +391,4 @@ int CLIRunTask(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
   return xgboost::CLIRunTask(argc, argv);
 }
+
